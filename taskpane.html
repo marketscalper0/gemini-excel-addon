@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Gemini Excel Agent</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script src="taskpane.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            margin: 0;
+        }
+        .header .icon {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: white;
+            font-size: 20px;
+        }
+        .settings {
+            background: #f5f7fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .info-section {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+        .info-section p {
+            margin: 0;
+            font-size: 12px;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .feature-card {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .feature-card .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .response-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <div class="header">
+                <div class="icon">✨</div>
+                <h1>Gemini AI Agent</h1>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('query')">Query</button>
+                <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+                <button class="tab-btn" onclick="switchTab('functions')">Functions</button>
+            </div>
+
+            <!-- Query Tab -->
+            <div id="query" class="tab-content active">
+                <div class="form-group">
+                    <label for="userQuery">Ask Gemini Anything:</label>
+                    <textarea id="userQuery" placeholder="Enter your query...\nE.g., Analyze the data in column A\nOr: Generate a formula to calculate...\nOr: Explain this data..." rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="useSelection" checked>
+                        Include selected cells in context
+                    </label>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="sendQuery()">🚀 Ask Gemini</button>
+                    <button class="btn-secondary" onclick="clearQuery()">Clear</button>
+                </div>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Thinking...</p>
+                </div>
+                <div class="response-box" id="responseBox" style="display:none;"></div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <div class="settings">
+                    <div class="form-group">
+                        <label for="geminiKey">Gemini API Key:</label>
+                        <input type="password" id="geminiKey" placeholder="Enter your Gemini API key">
+                        <small style="color: #999; margin-top: 4px; display: block;">Get it from: https://aistudio.google.com/app/apikey</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="model">Model:</label>
+                        <select id="model" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash</option>
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature">Temperature (0-2):</label>
+                        <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                        <small style="color: #999; margin-top: 4px; display: block;">Lower = More focused, Higher = More creative</small>
+                    </div>
+                    <button class="btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Functions Tab -->
+            <div id="functions" class="tab-content">
+                <div class="info-section">
+                    <p><strong>Available Functions:</strong></p>
+                    <p>Use these Excel functions powered by Gemini AI</p>
+                </div>
+                <div class="features">
+                    <div class="feature-card">
+                        <div class="icon">📊</div>
+                        <p>=GEMINI_ANALYZE(range)</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">🧮</div>
+                        <p>=GEMINI_CALC(formula_text)</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">📝</div>
+                        <p>=GEMINI_EXPLAIN(cell)</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">✅</div>
+                        <p>=GEMINI_VALIDATE(data)</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">🔍</div>
+                        <p>=GEMINI_FIND(range, criteria)</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">💡</div>
+                        <p>=GEMINI_SUGGEST(context)</p>
+                    </div>
+                </div>
+                <div class="info-section" style="margin-top: 16px;">
+                    <p><strong>Example Usage:</strong></p>
+                    <p>=GEMINI_ANALYZE(A1:A100) - Get insights from your data</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
